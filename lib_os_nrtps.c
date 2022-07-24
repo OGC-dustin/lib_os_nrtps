@@ -4,6 +4,7 @@
  * library
  */
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -20,8 +21,8 @@ void lib_os_nrtps_init( void )
     {
         event_array[ init_index ].status = 0;
         event_array[ init_index ].timestamp = 0U;
-        event_array[ init_index ].callback = NULL;
-        event_array[ init_index ].data_pointer = NULL;
+        event_array[ init_index ].callback_function = NULL;
+        event_array[ init_index ].argument_pointer = NULL;
     }
     return;
 }
@@ -40,8 +41,8 @@ enum e_lib_os_nrtps_status lib_os_nrtps_set(
             event_array[ set_index ].status = 1;
             event_array[ set_index ].timestamp =
                 hal_get_sys_tick() + task_period_tick;
-            event_array[ set_index ].callback = function;
-            event_array[ set_index ].data_pointer = arguments;
+            event_array[ set_index ].callback_function = function;
+            event_array[ set_index ].argument_pointer = arguments;
             return ( enum_LIB_OS_NRTPS_STATUS__NONE );
         }
     }
@@ -57,14 +58,13 @@ enum e_lib_os_nrtps_status lib_os_nrtps_clear(
     for ( ; clear_index < LIB_OS_NRTPS__EVENT_ARRAY_SIZE; clear_index++ )
     {
         if ( ( 1 == event_array[ clear_index ].status )
-             && ( function == event_array[ clear_index ].callback )
+             && ( function == event_array[ clear_index ].callback_function )
            )
         {
-            event_array[ clear_index ].status = 1;
-            event_array[ clear_index ].timestamp =
-                hal_get_sys_tick() + task_period_tick;
-            event_array[ clear_index ].callback = function;
-            event_array[ clear_index ].data_pointer = arguments;
+            event_array[ clear_index ].status = 0;
+            event_array[ clear_index ].timestamp = 0;
+            event_array[ clear_index ].callback_function = NULL;
+            event_array[ clear_index ].argument_pointer = NULL;
             task_found = true;
         }
     }
@@ -85,13 +85,13 @@ void lib_os_nrtps_start( void )
     while ( start_index < LIB_OS_NRTPS__EVENT_ARRAY_SIZE )
     {
         if ( ( 1 == event_array[ start_index ].status )
-             && ()
+             && ( event_array[ start_index ].timestamp < hal_get_sys_tick() )
            )
         {
             event_array[ start_index ].status = 0;
-            if ( NULL != event_array[ start_index ].callback )
+            if ( NULL != event_array[ start_index ].callback_function )
             {
-                event_array[ start_index ].callback( event_array[ start_index ].data_pointer );
+                event_array[ start_index ].callback_function( event_array[ start_index ].argument_pointer );
             }
         }
         start_index++;
@@ -114,5 +114,3 @@ void run_unit_tests__lib_os_nrtps( void )
     /* TODO: add setup, call, and response testing for all functions */
 }
 #endif /* DEPLOYMENT_OPTION_RUN_UNIT_TESTS */
-
-#endif /* LIB_OS_NRTPS_H */
